@@ -1,14 +1,55 @@
 {% extends "base.html" %}
 
+<script>
+	$(function() {
+		$('#download-file-btn').click(function() {
+			$.ajax({
+				type: 'POST',
+				url: '/download',
+				data: JSON.stringify(dname),
+				// data: form_data,
+				contentType: false,
+				cache: false,
+				processData: false,
+				async: false,
+				// url: "/download",
+				contentType: 'application/json',
+				// type: "get",
+				success: function(data) {
+					console.log('Success!');
+					console.log(data);
+				},
+				error: function(error) {
+					console.log("Failure!");
+					console.log(error);
+				}
+		});
+	}
+</script>
+
 {% block content %}
 
 <p>Hello, I am the upload page!</p>
 
 {{ data }}
 
+{{ filename }}
+
+{{ dname }}
+
 <!-- <div id='result'>
 	{{ result }}
 </div> -->
+
+<!-- <button id="download-file-btn" type="button">Download</button> -->
+<!-- 
+<input type="submit" id="download-file-btn" type="button" name="download-btn" value="Download"> -->
+<form id="download-form" action="{{ url_for('download') }}" method="post">
+	<input type="hidden" id="filename" name="filename" value={{dname}}>
+	<input type="submit" value="Download">
+</form>
+
+
 
 {% endblock %}
 

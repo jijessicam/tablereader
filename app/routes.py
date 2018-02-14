@@ -6,14 +6,17 @@ import flask
 import tabula
 import pandas as pd 
 import os
-from flask import Flask, render_template, flash, redirect, url_for, request, jsonify, session
+import csv 
+from flask import Flask, render_template, flash, redirect, url_for, request, jsonify, session, send_file
 from app import app
 from app.forms import LoginForm
 from werkzeug.utils import secure_filename
 
 UPLOAD_FOLDER = './uploads'
+DOWNLOAD_FOLDER = './downloads'
 ALLOWED_EXTENSIONS = set(['pdf', 'txt', 'jpg'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
 
 #---------------------------------------------------------------
 
@@ -59,38 +62,48 @@ def upload():
             filename = secure_filename(file.filename)
             print "filename: " + filename
             basedir = os.path.abspath(os.path.dirname(__file__))
-            file.save(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename))
+            file.save(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename)) # upload 
             
-            parse_result = parse(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename))
+            df_result, download_name = (parse(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename), filename))                                                                                                                                                                                        
+            
+            df_result.to_csv(os.path.join(os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)))
+            # file.save(os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)) # save for download
 
-            return render_template('upload.html', data=parse_result)
-
-            # return render_template('upload.html', data=filename)
+            return render_template('upload.html', data=df_result, filename=filename, dname=download_name)
 
 #---------------------------------------------------------------
 
-@app.route('/result', methods = ['GET', 'POST'])
-def result():
-    file_data = session.get('file_data', None)
-    return render_template('upload.html', data=file_data)
+# @app.route('/result', methods = ['GET', 'POST'])
+# def result():
+#     file_data = session.get('file_data', None)
+#     return render_template('upload.html', data=file_data)
 
 #---------------------------------------------------------------
 # File processing helper method 
 
-def parse(file_contents):
+def parse(file_contents, filename):
     df = tabula.read_pdf(file_contents) # argument: file name (ex. 'data.pdf')
-    # tabula.convert_into("data_1.pdf", "data_1_output.csv", output_format="csv")
-    return df 
+    file_chopped = ""
+    if (filename.endswith(".pdf")):
+        file_chopped = filename[:-len(".pdf")]
+    download_name = file_chopped + '_output.csv'
+    # csv = tabula.convert_into(file_contents, download_name, output_format="csv")
+    return df, download_name 
 
 #---------------------------------------------------------------
+# FIX THIS -- FIGURE OUT FILE DOWNLOAD CAPABILITIES / PATH
+@app.route('/download', methods = ['GET', 'POST'])
+def download():
+    # download_name = request.json
+    download_name = request.form['filename']
+    # required: unique filename, location/path to saved CSV
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    location = os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)
+    return send_file(location, mimetype='text/csv', attachment_filename=download_name, as_attachment=True)
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        flash('Login requested for user {}, remember_me={}'.format(
-            form.username.data, form.remember_me.data))
-        return redirect(url_for('index'))
-    return render_template('login.html', title='Sign In', form=form)
-
-
+# @app.route('/download/<filename>')
+# def alt_download(filename):
+#     return flask.send_from_dir(filename,
+#         mimetype="text/csv",
+#         as_attachment=True,
+#         attachment_filename=filename)
