@@ -29,30 +29,16 @@
 
 {% block content %}
 
-<p>Hello, I am the upload page!</p>
-
-{{ data }}
+{{ data | safe }}
 
 {{ filename }}
 
 {{ dname }}
 
-<!-- <div id='result'>
-	{{ result }}
-</div> -->
-
-<!-- <button id="download-file-btn" type="button">Download</button> -->
-<!-- 
-<input type="submit" id="download-file-btn" type="button" name="download-btn" value="Download"> -->
 <form id="download-form" action="{{ url_for('download') }}" method="post">
 	<input type="hidden" id="filename" name="filename" value={{dname}}>
 	<input type="submit" value="Download">
 </form>
 
 
-
 {% endblock %}
-
-<!-- <p><span id="{{ file_contents.id }}">{{ file_contents.content }}</span></p>
-
-<img id="loading{{ file_contents.id }}" style="display: none" src="/static/img/loading.gif"> -->

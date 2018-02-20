@@ -65,22 +65,16 @@ def upload():
             file.save(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename)) # upload 
             
             df_result, download_name = (parse(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename), filename))                                                                                                                                                                                        
-            
+            df_result_html = df_result.to_html();
+
+            # save cleaned file for download 
             df_result.to_csv(os.path.join(os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)))
-            # file.save(os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)) # save for download
+        
 
-            return render_template('upload.html', data=df_result, filename=filename, dname=download_name)
-
-#---------------------------------------------------------------
-
-# @app.route('/result', methods = ['GET', 'POST'])
-# def result():
-#     file_data = session.get('file_data', None)
-#     return render_template('upload.html', data=file_data)
+            return render_template('upload.html', data=df_result_html, filename=filename, dname=download_name)
 
 #---------------------------------------------------------------
 # File processing helper method 
-
 def parse(file_contents, filename):
     df = tabula.read_pdf(file_contents) # argument: file name (ex. 'data.pdf')
     file_chopped = ""
@@ -91,19 +85,12 @@ def parse(file_contents, filename):
     return df, download_name 
 
 #---------------------------------------------------------------
-# FIX THIS -- FIGURE OUT FILE DOWNLOAD CAPABILITIES / PATH
+
 @app.route('/download', methods = ['GET', 'POST'])
 def download():
-    # download_name = request.json
     download_name = request.form['filename']
     # required: unique filename, location/path to saved CSV
     basedir = os.path.abspath(os.path.dirname(__file__))
     location = os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)
     return send_file(location, mimetype='text/csv', attachment_filename=download_name, as_attachment=True)
 
-# @app.route('/download/<filename>')
-# def alt_download(filename):
-#     return flask.send_from_dir(filename,
-#         mimetype="text/csv",
-#         as_attachment=True,
-#         attachment_filename=filename)
