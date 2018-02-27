@@ -24,7 +24,6 @@ pandas==0.22.0
 pdfminer==20140328
 pdfquery==0.4.3
 pdftabextract==0.3.0
-pdftables-api==1.0.0
 Pillow==5.0.0
 PyPDF2==1.26.0
 pyquery==1.4.0
