@@ -12,8 +12,8 @@ from app import app
 from app.forms import LoginForm
 from werkzeug.utils import secure_filename
 
-UPLOAD_FOLDER = './uploads'
-DOWNLOAD_FOLDER = './downloads'
+UPLOAD_FOLDER = './tmp'         # previously: './uploads' (on local)
+DOWNLOAD_FOLDER = './downloads' # how to deal with this???
 ALLOWED_EXTENSIONS = set(['pdf', 'txt', 'jpg'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
