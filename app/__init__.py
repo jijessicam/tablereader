@@ -6,6 +6,7 @@ from flask import Flask
 from config import Config
 from flask_sqlalchemy import SQLAlchemy 
 from flask_migrate import Migrate 
+import os, json, boto3
 
 #----------------------------------------------------#
 # CONFIG

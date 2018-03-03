@@ -11,12 +11,20 @@ from flask import Flask, render_template, flash, redirect, url_for, request, jso
 from app import app
 from app.forms import LoginForm
 from werkzeug.utils import secure_filename
+import json, boto3
 
-UPLOAD_FOLDER = '/tmp'         # previously: './uploads' (on local)
+
+UPLOAD_FOLDER = './uploads'         # previously: './uploads' (on local) (should be 'tmp')
 DOWNLOAD_FOLDER = './downloads' # how to deal with this???
+TEMP_FOLDER = './tmp'
 ALLOWED_EXTENSIONS = set(['pdf', 'txt', 'jpg'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
+app.config['TEMP_FOLDER'] = TEMP_FOLDER
+
+client = boto3.client('s3')
+resource = boto3.resource('s3')
+s3_bucket = resource.Bucket('tablereader')
 
 #---------------------------------------------------------------
 
@@ -48,6 +56,7 @@ def index():
     # return render_template('upload.html', data=a)
     # return render_template('upload.html', title='Upload Result', data=a)
 
+
 @app.route('/upload', methods = ['GET', 'POST'])
 def upload():
     if request.method == 'POST':
@@ -61,17 +70,74 @@ def upload():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             print "filename: " + filename
+
+            # s3_bucket.upload_file(file, Key=filename)
+            # s3_bucket.put_object(Key=filename, Body=file)
+            # s3.Bucket('tablereader').put_object(Key=filename, Body=file)
             basedir = os.path.abspath(os.path.dirname(__file__))
-            file.save(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename)) # upload 
-            
-            df_result, download_name = (parse(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename), filename))                                                                                                                                                                                        
+            # rootdir = os.path.abspath(os.path.dirname(basedir))
+            # print "rootdir: " + rootdir 
+            # rootdir = app.root_path
+
+            # file.save(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename)) # upload 
+            file.save(os.path.join(basedir, app.config['TEMP_FOLDER'], filename)) # upload 
+
+            # obj = client.get_object(Bucket=s3_bucket, Key=filename)['Body']
+            # obj = s3.Object('tablereader', filename).get()['Body']
+            # print obj
+            # df_result, download_name = (s3.Object('tablereader', filename).get()['Body'], filename)  
+            # df_result, download_name = (parse(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename), filename))        
+            df_result, download_name = (parse(os.path.join(basedir, app.config['TEMP_FOLDER'], filename), filename))                                                                                                                                                                                     
             df_result_html = df_result.to_html();
 
-            # save cleaned file for download 
-            df_result.to_csv(os.path.join(os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)))
-        
+            # # save cleaned file for download 
+            # df_result.to_csv(os.path.join(os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)))
+            df_result.to_csv(os.path.join(os.path.join(basedir, app.config['TEMP_FOLDER'], download_name)))
 
             return render_template('upload.html', data=df_result_html, filename=filename, dname=download_name)
+
+          
+                                                                                                                                                                                            
+
+        
+
+# @app.route('/upload', methods = ['POST'])
+# def upload():
+#     print "I made it to the upload() function"
+#     return render_template('upload.html')
+
+
+# # Listen for GET request to tablereader.herokuapp.com/sign_s3/
+# @app.route('/sign-s3/')
+# def sign_s3():
+#     # Load info into the application (get bucket name)
+#     S3_BUCKET = os.environ.get('S3_BUCKET')
+
+#     # Load data from request 
+#     file_name = request.args.get('file_name')
+#     file_type = request.args.get('file_type')
+
+#     # Initialize S3 client 
+#     s3 = boto3.client('s3')
+
+#     # Generate and return presigned URL 
+#     presigned_post = s3.generate_presigned_post(
+#       Bucket = S3_BUCKET,
+#       Key = file_name,
+#       Fields = {"acl": "public-read", "Content-Type": file_type},
+#       Conditions = [
+#         {"acl": "public-read"},
+#         {"Content-Type": file_type}
+#       ],
+#       ExpiresIn = 3600
+#     )
+
+#     # Return data to the client
+#     return json.dumps({
+#       'data': presigned_post,
+#       'url': 'https://%s.s3.amazonaws.com/%s' % (S3_BUCKET, file_name)
+#     })
+
 
 #---------------------------------------------------------------
 # File processing helper method 

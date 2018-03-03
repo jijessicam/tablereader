@@ -2,6 +2,18 @@
 
 {% block content %}
 
+    <form method="POST" action="/upload" id="upload-file" enctype="multipart/form-data">
+	    <fieldset>
+	        <label for="file">Select a file</label>
+	        <input name="file" id="file-input" type="file">
+	        <input type="hidden" id="file-url" name="file-url" value="">
+	    </fieldset>
+<!-- 	    <fieldset>
+	        <button id="upload-file-btn" type="button">Upload</button>
+	    </fieldset> -->
+	    <input type="submit" value="Upload">
+	</form>
+
 <!-- 	<script>
 		$(function() {
 		    $('#upload-file-btn').click(function() {
@@ -30,14 +42,66 @@
 		});
 	</script> -->
 
-    <form action="/upload" id="upload-file" method="post" enctype="multipart/form-data">
-	    <fieldset>
-	        <label for="file">Select a file</label>
-	        <input name="file" type="file">
-	    </fieldset>
-<!-- 	    <fieldset>
-	        <button id="upload-file-btn" type="button">Upload</button>
-	    </fieldset> -->
-	    <input type="submit" value="Upload">
-	</form>
+	
+
+<!-- 	<script type="text/javascript">
+		// Listen for changes in file input and start upload process 
+		(function initUpload() {
+			document.getElementById("file-input").onchange = function() {
+				var files = document.getElementById("file-input").files;
+				var file = files[0];
+				if(!file) {
+					return alert("No file selected.");
+				}
+				getSignedRequest(file);
+			};
+		})();
+
+		// Pass file name and mime type to GET request 
+		// Get temporary signed request from Python app (routes)
+		// If request successful, continue uploading file 
+		function getSignedRequest(file){
+			var xhr = new XMLHttpRequest();
+			// xhr.open("GET", "/sign_s3?file_name="+file.name+"&file_type="+file.type);
+			xhr.open('GET', `/sign-s3?file-name=${file.name}&file-type=${file.type}`);
+			xhr.onreadystatechange = function(){
+			  if(xhr.readyState === 4){
+			    if(xhr.status === 200){
+			      var response = JSON.parse(xhr.responseText);
+			      uploadFile(file, response.data, response.url);
+			    }
+			    else{
+			      alert("Could not get signed URL.");
+			    }
+			  }
+			};
+			xhr.send();
+		}
+
+		// Upload actual file to S3 via POST request 
+		function uploadFile(file, s3Data, url){
+		  var xhr = new XMLHttpRequest();
+		  xhr.open("POST", s3Data.url);
+		  xhr.setRequestHeader('x-amz-acl', 'public-read');
+
+		  var postData = new FormData();
+		  for(key in s3Data.fields){
+		    postData.append(key, s3Data.fields[key]);
+		  }
+		  postData.append('file', file);
+
+		  xhr.onreadystatechange = function() {
+		    if(xhr.readyState === 4){
+		      if(xhr.status === 200 || xhr.status === 204){
+		      	console.log("Success");
+		      	document.getElementById('file-url').value = url;
+		      }
+		      else{
+		        alert("Could not upload file.");
+		      }
+		   }
+		  };
+		  xhr.send(postData);
+		}
+	</script> -->
 {% endblock %}
