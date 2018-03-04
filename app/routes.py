@@ -156,6 +156,8 @@ def upload():
 #---------------------------------------------------------------
 # File processing helper method 
 def parse(file_contents, filename):
+    print "I am in the PARSE method"
+    print "file contents: " + file_contents
     df = tabula.read_pdf(file_contents) # argument: file name (ex. 'data.pdf')
     file_chopped = ""
     if (filename.endswith(".pdf")):
