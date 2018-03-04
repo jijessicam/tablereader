@@ -7,11 +7,12 @@ import tabula
 import pandas as pd 
 import os
 import csv 
-from flask import Flask, render_template, flash, redirect, url_for, request, jsonify, session, send_file
+from flask import Flask, render_template, flash, redirect, url_for, request, jsonify, session, send_file, Response 
 from app import app
 from app.forms import LoginForm
 from werkzeug.utils import secure_filename
 import json, boto3
+from io import StringIO, BytesIO
 
 
 UPLOAD_FOLDER = './uploads'         # previously: './uploads' (on local) (should be 'tmp')
@@ -24,7 +25,10 @@ app.config['TEMP_FOLDER'] = TEMP_FOLDER
 
 client = boto3.client('s3')
 resource = boto3.resource('s3')
-s3_bucket = resource.Bucket('tablereader')
+upload_bucket = resource.Bucket('tablereader-uploads')
+upload_bucket_name = 'tablereader-uploads'
+download_bucket = resource.Bucket('tablereader-downloads')
+download_bucket_name = 'tablereader-downloads'
 
 #---------------------------------------------------------------
 
@@ -72,7 +76,7 @@ def upload():
             print "filename: " + filename
 
             # s3_bucket.upload_file(file, Key=filename)
-            # s3_bucket.put_object(Key=filename, Body=file)
+            upload_bucket.put_object(Key=filename, Body=file)
             # s3.Bucket('tablereader').put_object(Key=filename, Body=file)
             basedir = os.path.abspath(os.path.dirname(__file__))
             # rootdir = os.path.abspath(os.path.dirname(basedir))
@@ -80,19 +84,29 @@ def upload():
             # rootdir = app.root_path
 
             # file.save(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename)) # upload 
-            file.save(os.path.join(basedir, app.config['TEMP_FOLDER'], filename)) # upload 
+            # file.save(os.path.join(basedir, app.config['TEMP_FOLDER'], filename)) # upload 
 
-            # obj = client.get_object(Bucket=s3_bucket, Key=filename)['Body']
+            # obj = client.get_object(Bucket=upload_bucket, Key=filename)['Body']
             # obj = s3.Object('tablereader', filename).get()['Body']
             # print obj
+
+            path_to_bucket = 'http://s3.amazonaws.com/' + upload_bucket_name + '/' + filename
+            print path_to_bucket 
+
             # df_result, download_name = (s3.Object('tablereader', filename).get()['Body'], filename)  
             # df_result, download_name = (parse(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename), filename))        
-            df_result, download_name = (parse(os.path.join(basedir, app.config['TEMP_FOLDER'], filename), filename))                                                                                                                                                                                     
+            # df_result, download_name = (parse(os.path.join(basedir, app.config['TEMP_FOLDER'], filename), filename))  
+            df_result, download_name = parse(path_to_bucket, filename)                                                                                                                                                                                   
             df_result_html = df_result.to_html();
+
+            csv_buffer = BytesIO()
+            df_result.to_csv(csv_buffer)
+
+            download_bucket.put_object(Key=download_name, Body=csv_buffer.getvalue())
 
             # # save cleaned file for download 
             # df_result.to_csv(os.path.join(os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)))
-            df_result.to_csv(os.path.join(os.path.join(basedir, app.config['TEMP_FOLDER'], download_name)))
+            # df_result.to_csv(os.path.join(os.path.join(basedir, app.config['TEMP_FOLDER'], download_name)))
 
             return render_template('upload.html', data=df_result_html, filename=filename, dname=download_name)
 
@@ -156,7 +170,17 @@ def parse(file_contents, filename):
 def download():
     download_name = request.form['filename']
     # required: unique filename, location/path to saved CSV
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    location = os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)
-    return send_file(location, mimetype='text/csv', attachment_filename=download_name, as_attachment=True)
+    # basedir = os.path.abspath(os.path.dirname(__file__))
+    # location = os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)
+    # return send_file(location, mimetype='text/csv', attachment_filename=download_name, as_attachment=True)
+    
+    # file = client.get_object(Bucket='tablereader-downloads', Key=download_name)
+    # response = make_response(file['Body'].read())
+    # response.headers['Content-Type'] = 'text/csv'
 
+    file = client.get_object(Bucket=download_bucket_name, Key=download_name)
+    return Response(
+        file['Body'].read(),
+        mimetype='text/csv',
+        headers={"Content-Disposition": "attachment;filename=output.csv"}
+        )
