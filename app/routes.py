@@ -23,8 +23,7 @@ import shutil
 
 UPLOAD_FOLDER = './uploads'         # previously: './uploads' (on local) (should be 'tmp')
 DOWNLOAD_FOLDER = './downloads' # how to deal with this???
-TEMP_FOLDER = './tmp'
-TMP_FOLDER = '/tmp'
+TEMP_FOLDER = '/tmp'
 ALLOWED_EXTENSIONS = set(['pdf', 'txt', 'jpg', 'png'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
