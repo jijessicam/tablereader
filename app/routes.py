@@ -6,6 +6,8 @@ import flask
 import tabula
 import pandas as pd 
 import os
+import subprocess
+import logging 
 import csv 
 from flask import Flask, render_template, flash, redirect, url_for, request, jsonify, session, send_file, Response 
 from app import app
@@ -13,15 +15,22 @@ from app.forms import LoginForm
 from werkzeug.utils import secure_filename
 import json, boto3
 from io import StringIO, BytesIO
+import shutil
 
+#---------------------------------------------------------------
+# APP CONFIG 
+#---------------------------------------------------------------
 
 UPLOAD_FOLDER = './uploads'         # previously: './uploads' (on local) (should be 'tmp')
 DOWNLOAD_FOLDER = './downloads' # how to deal with this???
 TEMP_FOLDER = './tmp'
-ALLOWED_EXTENSIONS = set(['pdf', 'txt', 'jpg'])
+TMP_FOLDER = '/tmp'
+ALLOWED_EXTENSIONS = set(['pdf', 'txt', 'jpg', 'png'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
 app.config['TEMP_FOLDER'] = TEMP_FOLDER
+app.config['OCR_OUTPUT_FILE'] = 'ocr'
+app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
 
 client = boto3.client('s3')
 resource = boto3.resource('s3')
@@ -91,6 +100,9 @@ def upload():
 
             path_to_bucket = 'http://s3.amazonaws.com/' + upload_bucket_name + '/' + filename
 
+            response = client.list_objects_v2(Bucket=upload_bucket_name, Prefix=filename)
+            print response 
+
             # df_result, download_name = (s3.Object('tablereader', filename).get()['Body'], filename)  
             # df_result, download_name = (parse(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename), filename))        
             # df_result, download_name = (parse(os.path.join(basedir, app.config['TEMP_FOLDER'], filename), filename))  
@@ -156,6 +168,11 @@ def upload():
 def parse(file_contents, filename):
     print "I am in the PARSE method"
     print "file contents: " + file_contents
+
+    opener = urllib.URLopener()
+    file = opener.open(file_contents)
+    print file 
+
     df = tabula.read_pdf(file_contents) # argument: file name (ex. 'data.pdf')
     file_chopped = ""
     if (filename.endswith(".pdf")):
@@ -184,3 +201,58 @@ def download():
         mimetype='text/csv',
         headers={"Content-Disposition": "attachment;filename=output.csv"}
         )
+
+#----------------------------------------------------
+
+@app.route('/test', methods = ['GET'])
+def test():
+  return render_template('upload_form.html', landing_page = 'process')
+
+@app.route('/process', methods = ['GET','POST'])
+def process():
+  if request.method == 'POST':
+    file = request.files['file']
+    hocr = request.form.get('hocr') or ''
+    ext = '.hocr' if hocr else '.txt'
+    if file and allowed_file(file.filename):
+      folder = os.path.join(app.config['TEMP_FOLDER'], str(os.getpid()))
+      os.mkdir(folder)
+      input_file = os.path.join(folder, secure_filename(file.filename))
+      output_file = os.path.join(folder, app.config['OCR_OUTPUT_FILE'])
+      file.save(input_file)
+
+      command = ['tesseract', input_file, output_file, '-l', request.form['lang'], hocr]
+      proc = subprocess.Popen(command, stderr=subprocess.PIPE)
+      proc.wait()
+
+      output_file += ext
+
+      if os.path.isfile(output_file):
+        f = open(output_file)
+        resp = jsonify( {
+          u'status': 200,
+          u'ocr':{k:v.decode('utf-8') for k,v in enumerate(f.read().splitlines())}
+        } )
+      else:
+        resp = jsonify( {
+          u'status': 422,
+          u'message': u'Unprocessable Entity'
+        } )
+        resp.status_code = 422
+
+      shutil.rmtree(folder)
+      return resp
+    else:
+      resp = jsonify( { 
+        u'status': 415,
+        u'message': u'Unsupported Media Type' 
+      } )
+      resp.status_code = 415
+      return resp
+  else:
+    resp = jsonify( { 
+      u'status': 405, 
+      u'message': u'The method is not allowed for the requested URL' 
+    } )
+    resp.status_code = 405
+    return resp
