@@ -73,16 +73,15 @@ def upload():
             return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            print "filename: " + filename
+
+            # # temporarily save file on server
+            # file.save(os.path.join(app.config['TEMP_FOLDER'], filename))
 
             # s3_bucket.upload_file(file, Key=filename)
-            upload_bucket.put_object(Key=filename, Body=file)
+            upload_bucket.put_object(Key=filename, Body=file.stream, ContentType=file.content_type)
             # s3.Bucket('tablereader').put_object(Key=filename, Body=file)
-            basedir = os.path.abspath(os.path.dirname(__file__))
-            # rootdir = os.path.abspath(os.path.dirname(basedir))
-            # print "rootdir: " + rootdir 
-            # rootdir = app.root_path
-
+            
+            # basedir = os.path.abspath(os.path.dirname(__file__))
             # file.save(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename)) # upload 
             # file.save(os.path.join(basedir, app.config['TEMP_FOLDER'], filename)) # upload 
 
@@ -91,7 +90,6 @@ def upload():
             # print obj
 
             path_to_bucket = 'http://s3.amazonaws.com/' + upload_bucket_name + '/' + filename
-            print path_to_bucket 
 
             # df_result, download_name = (s3.Object('tablereader', filename).get()['Body'], filename)  
             # df_result, download_name = (parse(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename), filename))        
@@ -154,7 +152,7 @@ def upload():
 
 
 #---------------------------------------------------------------
-# File processing helper method 
+# Tabula file processing helper method 
 def parse(file_contents, filename):
     print "I am in the PARSE method"
     print "file contents: " + file_contents
