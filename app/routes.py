@@ -99,7 +99,9 @@ def upload():
             # obj = s3.Object('tablereader', filename).get()['Body']
             # print obj
 
-            path_to_bucket = 'http://s3.amazonaws.com/' + upload_bucket_name + '/' + filename
+            # path_to_bucket = 'http://s3.amazonaws.com/' + upload_bucket_name + '/' + filename
+            path_to_bucket = 'https://' + upload_bucket_name + '.s3.amazonsws.com/' + filename
+            # example: https://tablereader-uploads.s3.amazonaws.com/arabic.pdf (virtual-hosted style)
 
             response = client.list_objects_v2(Bucket=upload_bucket_name, Prefix=filename)
             print response 
