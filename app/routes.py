@@ -16,6 +16,8 @@ from werkzeug.utils import secure_filename
 import json, boto3
 from io import StringIO, BytesIO
 import shutil
+import requests 
+import urllib
 
 #---------------------------------------------------------------
 # APP CONFIG 
@@ -167,6 +169,14 @@ def upload():
 def parse(file_contents, filename):
     print "I am in the PARSE method"
     print "file contents: " + file_contents
+
+    r = requests.get(file_contents)
+    print "request: ", r
+    print "request headers: ", r.headers
+
+    ur = urllib.urlopen(file_contents)
+    print "urllib: ", ur
+    print "urllib.read: ", ur.read()
 
     df = tabula.read_pdf(file_contents) # argument: file name (ex. 'data.pdf')
     file_chopped = ""
