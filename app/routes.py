@@ -24,7 +24,7 @@ import shutil
 UPLOAD_FOLDER = './uploads'         # previously: './uploads' (on local) (should be 'tmp')
 DOWNLOAD_FOLDER = './downloads' # how to deal with this???
 TEMP_FOLDER = '/tmp'
-ALLOWED_EXTENSIONS = set(['pdf', 'txt', 'jpg', 'png'])
+ALLOWED_EXTENSIONS = set(['pdf', 'txt', 'jpg', 'png', 'jpeg'])
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
 app.config['TEMP_FOLDER'] = TEMP_FOLDER
@@ -215,6 +215,10 @@ def process():
     ext = '.hocr' if hocr else '.txt'
     if file and allowed_file(file.filename):
       folder = os.path.join(app.config['TEMP_FOLDER'], str(os.getpid()))
+
+      print "pid: ", str(os.getpid())
+      print folder 
+
       os.mkdir(folder)
       input_file = os.path.join(folder, secure_filename(file.filename))
       output_file = os.path.join(folder, app.config['OCR_OUTPUT_FILE'])
