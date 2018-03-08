@@ -176,7 +176,6 @@ def parse(file_contents, filename):
 
     ur = urllib.urlopen(file_contents)
     print "urllib: ", ur
-    print "urllib.read: ", ur.read()
 
     df = tabula.read_pdf(file_contents) # argument: file name (ex. 'data.pdf')
     file_chopped = ""
