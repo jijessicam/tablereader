@@ -168,10 +168,6 @@ def parse(file_contents, filename):
     print "I am in the PARSE method"
     print "file contents: " + file_contents
 
-    opener = urllib.URLopener()
-    file = opener.open(file_contents)
-    print file 
-
     df = tabula.read_pdf(file_contents) # argument: file name (ex. 'data.pdf')
     file_chopped = ""
     if (filename.endswith(".pdf")):
