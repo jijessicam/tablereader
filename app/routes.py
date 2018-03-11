@@ -54,23 +54,6 @@ def index():
 
 #---------------------------------------------------------------
 
-# @app.route('/upload', methods = ['POST'])
-# def upload():
-#     if request.method == 'POST':
-#     	# ADD: error handling: wrong file type (not PDF)
-#         file = request.files['file']
-#         if file:
-#         	filename = secure_filename(file.filename)
-#         	file_contents = file.read()
-#         	# session['file_data'] = file_contents
-#             parse_result = parse(file_contents)
-#             print parse_result
-#             session['file_data'] = file_contents
-#     return jsonify(dict(redirect='/result'))
-    # return render_template('upload.html', data=a)
-    # return render_template('upload.html', title='Upload Result', data=a)
-
-
 @app.route('/upload', methods = ['GET', 'POST'])
 def upload():
     if request.method == 'POST':
@@ -107,9 +90,9 @@ def upload():
             print response 
 
             # df_result, download_name = (s3.Object('tablereader', filename).get()['Body'], filename)  
-            # df_result, download_name = (parse(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename), filename))        
-            # df_result, download_name = (parse(os.path.join(basedir, app.config['TEMP_FOLDER'], filename), filename))  
-            df_result, download_name = parse(path_to_bucket, filename)                                                                                                                                                                                   
+            # df_result, download_name = (tabulaParse(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename), filename))        
+            # df_result, download_name = (tabulaParse(os.path.join(basedir, app.config['TEMP_FOLDER'], filename), filename))  
+            df_result, download_name = tabulaParse(path_to_bucket, filename)                                                                                                                                                                                   
             df_result_html = df_result.to_html();
 
             csv_buffer = BytesIO()
@@ -122,69 +105,19 @@ def upload():
             # df_result.to_csv(os.path.join(os.path.join(basedir, app.config['TEMP_FOLDER'], download_name)))
 
             return render_template('upload.html', data=df_result_html, filename=filename, dname=download_name)
-
-          
-                                                                                                                                                                                            
-
-        
-
-# @app.route('/upload', methods = ['POST'])
-# def upload():
-#     print "I made it to the upload() function"
-#     return render_template('upload.html')
-
-
-# # Listen for GET request to tablereader.herokuapp.com/sign_s3/
-# @app.route('/sign-s3/')
-# def sign_s3():
-#     # Load info into the application (get bucket name)
-#     S3_BUCKET = os.environ.get('S3_BUCKET')
-
-#     # Load data from request 
-#     file_name = request.args.get('file_name')
-#     file_type = request.args.get('file_type')
-
-#     # Initialize S3 client 
-#     s3 = boto3.client('s3')
-
-#     # Generate and return presigned URL 
-#     presigned_post = s3.generate_presigned_post(
-#       Bucket = S3_BUCKET,
-#       Key = file_name,
-#       Fields = {"acl": "public-read", "Content-Type": file_type},
-#       Conditions = [
-#         {"acl": "public-read"},
-#         {"Content-Type": file_type}
-#       ],
-#       ExpiresIn = 3600
-#     )
-
-#     # Return data to the client
-#     return json.dumps({
-#       'data': presigned_post,
-#       'url': 'https://%s.s3.amazonaws.com/%s' % (S3_BUCKET, file_name)
-#     })
-
-
+    
 #---------------------------------------------------------------
+
 # Tabula file processing helper method 
-def parse(file_contents, filename):
-    print "I am in the PARSE method"
+def tabulaParse(file_contents, filename):
+    print "I am in the tabulaParse method"
     print "file contents: " + file_contents
-
-    r = requests.get(file_contents)
-    print "request: ", r
-    print "request headers: ", r.headers
-
-    ur = urllib.urlopen(file_contents)
-    print "urllib: ", ur
 
     df = tabula.read_pdf(file_contents) # argument: file name (ex. 'data.pdf')
     file_chopped = ""
     if (filename.endswith(".pdf")):
         file_chopped = filename[:-len(".pdf")]
     download_name = file_chopped + '_output.csv'
-    # csv = tabula.convert_into(file_contents, download_name, output_format="csv")
     return df, download_name 
 
 #---------------------------------------------------------------
