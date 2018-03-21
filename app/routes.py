@@ -156,13 +156,14 @@ def process():
     if file and allowed_file(file.filename):
       folder = os.path.join(app.config['TEMP_FOLDER'], str(os.getpid()))
 
-      print "pid: ", str(os.getpid())
-      print folder 
-
       os.mkdir(folder)
       input_file = os.path.join(folder, secure_filename(file.filename))
       output_file = os.path.join(folder, app.config['OCR_OUTPUT_FILE'])
       file.save(input_file)
+
+      print "input file check: ", os.path.isfile(input_file)
+      print "input file path: ", input_file 
+      print "output file path: ", output_file 
 
       command = ['tesseract', input_file, output_file, '-l', request.form['lang'], hocr]
       proc = subprocess.Popen(command, stderr=subprocess.PIPE)

@@ -1,15 +1,9 @@
-/*div#loading {
-	width: 35px;
-	height: 35px;
-	display: none;
-	background: url('/static/loadingspinner.gif') no-repeat;
-	cursor: wait;
-}*/
-
 #loading {
 	position: absolute;
 	left: 50%;
 	top: 50%;
+    margin-top: -75px;
+    margin-left: -75px;
 	z-index: 1;
     border: 16px solid #f3f3f3; /* Light grey */
     border-top: 16px solid #3498db; /* Blue */
@@ -28,4 +22,91 @@
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+input[type=file] {
+    margin: 0 auto;
+}
+
+input[type=submit] {
+    padding:5px 15px; 
+    color: #FFFFFF; 
+    background-color: #2073B3; 
+    border-color: #130269; 
+    border:0 none;
+    cursor:pointer;
+    -webkit-border-radius: 5px;
+    border-radius: 5px; 
+}
+
+.inputfile {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+}
+
+.inputfile + label {
+    font-size: 1.25em;
+    font-weight: 700;
+    color: white;
+    background-color: black;
+    display: inline-block;
+}
+
+.inputfile:focus + label,
+.inputfile + label:hover {
+    background-color: red;
+}
+
+.inputfile + label {
+    cursor: pointer; /* "hand" cursor */
+}
+
+.custom-button { 
+  color: #FFFFFF; 
+  background-color: #202FB3; 
+  border-color: #130269; 
+} 
+ 
+.custom-button:hover, 
+.custom-button:focus, 
+.custom-button:active, 
+.custom-button.active, 
+.open .dropdown-toggle.custom-button { 
+  color: #FFFFFF; 
+  background-color: #2073B3; 
+  border-color: #130269; 
+} 
+ 
+.custom-button:active, 
+.custom-button.active, 
+.open .dropdown-toggle.custom-button { 
+  background-image: none; 
+} 
+ 
+.custom-button.disabled, 
+.custom-button[disabled], 
+fieldset[disabled] .custom-button, 
+.custom-button.disabled:hover, 
+.custom-button[disabled]:hover, 
+fieldset[disabled] .custom-button:hover, 
+.custom-button.disabled:focus, 
+.custom-button[disabled]:focus, 
+fieldset[disabled] .custom-button:focus, 
+.custom-button.disabled:active, 
+.custom-button[disabled]:active, 
+fieldset[disabled] .custom-button:active, 
+.custom-button.disabled.active, 
+.custom-button[disabled].active, 
+fieldset[disabled] .custom-button.active { 
+  background-color: #202FB3; 
+  border-color: #130269; 
+} 
+ 
+.custom-button .badge { 
+  color: #202FB3; 
+  background-color: #FFFFFF; 
 }
