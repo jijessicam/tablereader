@@ -171,6 +171,10 @@ def process():
 
       output_file += ext
 
+      print output_file 
+      print "output file exists check: ", os.path.exists(output_file)
+      print "output file is file check: ", os.path.isfile(output_file)
+
       if os.path.isfile(output_file):
         f = open(output_file)
         resp = jsonify( {
