@@ -18,6 +18,9 @@ from io import StringIO, BytesIO
 import shutil
 import requests 
 import urllib
+from flask_wtf import FlaskForm 
+from flask_wtf.file import FileField, FileRequired
+from wtforms import StringField, SubmitField
 
 #---------------------------------------------------------------
 # APP CONFIG 
@@ -42,6 +45,14 @@ download_bucket_name = 'tablereader-downloads'
 
 #---------------------------------------------------------------
 
+# Flask-WTF web form class
+class FileUploadForm(FlaskForm):
+    file_upload = FileField(validators=[FileRequired()])
+    page_range = StringField('Page Range')
+    submit = SubmitField('Upload')
+
+#---------------------------------------------------------------
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
@@ -50,61 +61,83 @@ def allowed_file(filename):
 @app.route('/')
 @app.route('/index')
 def index():
-    return render_template('index.html', title='Home')
+    form = FileUploadForm()
+    return render_template('index.html', title='Home', form=form)
 
 #---------------------------------------------------------------
 
 @app.route('/upload', methods = ['GET', 'POST'])
 def upload():
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
+    # if request.method == 'POST':
+    #     if 'file' not in request.files:
+    #         flash('No file part')
+    #         return redirect(request.url)
+        
+    #     file = request.files['file']
+    #     print "FILE: ", file
+    #     print "FILENAME: ", file.filename
 
-            # # temporarily save file on server
-            # file.save(os.path.join(app.config['TEMP_FOLDER'], filename))
+    #     if file.filename == '':
+    #         flash('No selected file')
+    #         return redirect(request.url)
+        
+    #     if file and allowed_file(file.filename):
+    #         filename = secure_filename(file.filename)
+    form = FileUploadForm()
 
-            # s3_bucket.upload_file(file, Key=filename)
-            upload_bucket.put_object(Key=filename, Body=file.stream, ContentType=file.content_type)
-            # s3.Bucket('tablereader').put_object(Key=filename, Body=file)
-            
-            # basedir = os.path.abspath(os.path.dirname(__file__))
-            # file.save(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename)) # upload 
-            # file.save(os.path.join(basedir, app.config['TEMP_FOLDER'], filename)) # upload 
+    if form.validate_on_submit():
+        file = form.file_upload.data
+        filename = secure_filename(file.filename)
+        
+        # Multiple page handling
+        # if request.form['page-range']:
+        #     page_range = request.form['page-range'].split(",")
+        # else:
+        #     page_range = list()
+        # print "page_range: ", page_range 
 
-            # obj = client.get_object(Bucket=upload_bucket, Key=filename)['Body']
-            # obj = s3.Object('tablereader', filename).get()['Body']
-            # print obj
+        # # temporarily save file on server
+        # file.save(os.path.join(app.config['TEMP_FOLDER'], filename))
 
-            # path_to_bucket = 'http://s3.amazonaws.com/' + upload_bucket_name + '/' + filename
-            path_to_bucket = 'https://' + upload_bucket_name + '.s3.amazonaws.com/' + filename
-            # example: https://tablereader-uploads.s3.amazonaws.com/arabic.pdf (virtual-hosted style)
+        # s3_bucket.upload_file(file, Key=filename)
+        upload_bucket.put_object(Key=filename, Body=file.stream, ContentType=file.content_type)
+        # s3.Bucket('tablereader').put_object(Key=filename, Body=file)
+        
+        # basedir = os.path.abspath(os.path.dirname(__file__))
+        # file.save(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename)) # upload 
+        # file.save(os.path.join(basedir, app.config['TEMP_FOLDER'], filename)) # upload 
 
-            response = client.list_objects_v2(Bucket=upload_bucket_name, Prefix=filename)
-            print response 
+        # obj = client.get_object(Bucket=upload_bucket, Key=filename)['Body']
+        # obj = s3.Object('tablereader', filename).get()['Body']
+        # print obj
 
-            # df_result, download_name = (s3.Object('tablereader', filename).get()['Body'], filename)  
-            # df_result, download_name = (tabulaParse(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename), filename))        
-            # df_result, download_name = (tabulaParse(os.path.join(basedir, app.config['TEMP_FOLDER'], filename), filename))  
-            df_result, download_name = tabulaParse(path_to_bucket, filename)                                                                                                                                                                                   
-            df_result_html = df_result.to_html();
+        # path_to_bucket = 'http://s3.amazonaws.com/' + upload_bucket_name + '/' + filename
+        path_to_bucket = 'https://' + upload_bucket_name + '.s3.amazonaws.com/' + filename
+        # example: https://tablereader-uploads.s3.amazonaws.com/arabic.pdf (virtual-hosted style)
 
-            csv_buffer = BytesIO()
-            df_result.to_csv(csv_buffer)
+        response = client.list_objects_v2(Bucket=upload_bucket_name, Prefix=filename)
+        print response 
 
-            download_bucket.put_object(Key=download_name, Body=csv_buffer.getvalue())
+        # df_result, download_name = (s3.Object('tablereader', filename).get()['Body'], filename)  
+        # df_result, download_name = (tabulaParse(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename), filename))        
+        # df_result, download_name = (tabulaParse(os.path.join(basedir, app.config['TEMP_FOLDER'], filename), filename))  
+        df_result, download_name = tabulaParse(path_to_bucket, filename)                                                                                                                                                                                   
+        df_result_html = df_result.to_html();
 
-            # # save cleaned file for download 
-            # df_result.to_csv(os.path.join(os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)))
-            # df_result.to_csv(os.path.join(os.path.join(basedir, app.config['TEMP_FOLDER'], download_name)))
+        csv_buffer = BytesIO()
+        df_result.to_csv(csv_buffer)
 
-            return render_template('upload.html', data=df_result_html, filename=filename, dname=download_name)
+        download_bucket.put_object(Key=download_name, Body=csv_buffer.getvalue())
+
+        # # save cleaned file for download 
+        # df_result.to_csv(os.path.join(os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)))
+        # df_result.to_csv(os.path.join(os.path.join(basedir, app.config['TEMP_FOLDER'], download_name)))
+
+        return render_template('upload.html', data=df_result_html, filename=filename, dname=download_name)
+
+    # Error handling: form not validated 
+    else:
+        return render_template('404.html') 
     
 #---------------------------------------------------------------
 
