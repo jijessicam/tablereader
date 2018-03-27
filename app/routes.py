@@ -97,7 +97,7 @@ def upload():
         # Handle each dataframe returned by the helper method 
         for index, df in enumerate(df_list): 
             df_html_list.append(df.to_html()) # HTML display 
-            csv = df.to_csv(path_or_buf=None) # will be a string 
+            csv = df.to_csv(path_or_buf=None, encoding='utf-8') # will be a string 
             download_name = download_name_list[index] # match to download name 
             download_bucket.put_object(Key=download_name, Body=csv) # put in downlad bucket
 
@@ -136,8 +136,6 @@ def tabulaParse(file_contents, filename, pages, multitable):
     for i in range(0, number_of_files):
         download_name = file_chopped + '_' + str(i + 1) + '_output.csv'
         download_name_list.append(download_name)
-
-    print "download name list: ", download_name_list
 
     # Returns a list of dataframes and a list of download names 
     return df, download_name_list 
