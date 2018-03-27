@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-<script>
+<!-- <script>
 	$(function() {
 		$('#download-file-btn').click(function() {
 			$.ajax({
 				type: 'POST',
 				url: '/download',
-				data: JSON.stringify(dname),
+				data: JSON.stringify(dnamelist),
 				// data: form_data,
 				contentType: false,
 				cache: false,
@@ -14,7 +14,6 @@
 				async: false,
 				// url: "/download",
 				contentType: 'application/json',
-				// type: "get",
 				success: function(data) {
 					console.log('Success!');
 					console.log(data);
@@ -25,20 +24,29 @@
 				}
 		});
 	}
-</script>
+</script> -->
 
 {% block app_content %}
 
-{{ data | safe }}
+{% for dataframe in data %}
+      <p>{{ dataframe | safe }} </p>
+{% endfor %}
+
+<!-- {{ data | safe }} -->
 
 {{ filename }}
 
-{{ dname }}
+{% for dname in dnamelist %}
+	<p>{{ dname | safe }}</p>
+{% endfor %}
+
+{{ dnamelist | safe }}
+
+<!-- {{ dnamelist }} -->
 
 <form id="download-form" action="{{ url_for('download') }}" method="post">
-	<input type="hidden" id="filename" name="filename" value={{dname}}>
+	<input type="hidden" id="filename" name="filename" value="{{ dnamelist | safe }}">
 	<input type="submit" class="custom-button" value="Download">
 </form>
-
 
 {% endblock %}

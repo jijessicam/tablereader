@@ -5,10 +5,12 @@
 import flask
 import tabula
 import pandas as pd 
+import ast 
 import os
 import subprocess
 import logging 
 import csv 
+import zipfile 
 from flask import Flask, render_template, flash, redirect, url_for, request, jsonify, session, send_file, Response 
 from app import app
 from app.forms import LoginForm
@@ -20,7 +22,7 @@ import requests
 import urllib
 from flask_wtf import FlaskForm 
 from flask_wtf.file import FileField, FileRequired
-from wtforms import StringField, SubmitField
+from wtforms import StringField, SubmitField, BooleanField
 
 #---------------------------------------------------------------
 # APP CONFIG 
@@ -49,6 +51,7 @@ download_bucket_name = 'tablereader-downloads'
 class FileUploadForm(FlaskForm):
     file_upload = FileField(validators=[FileRequired()])
     page_range = StringField('Page Range')
+    multiple_tables = BooleanField('Does your file contain multiple tables on the same page?')
     submit = SubmitField('Upload')
 
 #---------------------------------------------------------------
@@ -68,72 +71,37 @@ def index():
 
 @app.route('/upload', methods = ['GET', 'POST'])
 def upload():
-    # if request.method == 'POST':
-    #     if 'file' not in request.files:
-    #         flash('No file part')
-    #         return redirect(request.url)
-        
-    #     file = request.files['file']
-    #     print "FILE: ", file
-    #     print "FILENAME: ", file.filename
-
-    #     if file.filename == '':
-    #         flash('No selected file')
-    #         return redirect(request.url)
-        
-    #     if file and allowed_file(file.filename):
-    #         filename = secure_filename(file.filename)
     form = FileUploadForm()
 
     if form.validate_on_submit():
         file = form.file_upload.data
         filename = secure_filename(file.filename)
-        
+
         # Multiple page handling
-        # if request.form['page-range']:
-        #     page_range = request.form['page-range'].split(",")
-        # else:
-        #     page_range = list()
-        # print "page_range: ", page_range 
+        if form.page_range.data:
+            temp = form.page_range.data.rstrip(',').split(',')
+            page_range = [int(x) for x in temp]
+        else:
+            page_range = list()
 
-        # # temporarily save file on server
-        # file.save(os.path.join(app.config['TEMP_FOLDER'], filename))
+        # Multiple table handling (boolean flag)
+        multi_table_flag = form.multiple_tables.data
 
-        # s3_bucket.upload_file(file, Key=filename)
         upload_bucket.put_object(Key=filename, Body=file.stream, ContentType=file.content_type)
-        # s3.Bucket('tablereader').put_object(Key=filename, Body=file)
-        
-        # basedir = os.path.abspath(os.path.dirname(__file__))
-        # file.save(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename)) # upload 
-        # file.save(os.path.join(basedir, app.config['TEMP_FOLDER'], filename)) # upload 
-
-        # obj = client.get_object(Bucket=upload_bucket, Key=filename)['Body']
-        # obj = s3.Object('tablereader', filename).get()['Body']
-        # print obj
-
-        # path_to_bucket = 'http://s3.amazonaws.com/' + upload_bucket_name + '/' + filename
         path_to_bucket = 'https://' + upload_bucket_name + '.s3.amazonaws.com/' + filename
-        # example: https://tablereader-uploads.s3.amazonaws.com/arabic.pdf (virtual-hosted style)
 
-        response = client.list_objects_v2(Bucket=upload_bucket_name, Prefix=filename)
-        print response 
+        # Call the Tabula helper method 
+        df_list, download_name_list = tabulaParse(path_to_bucket, filename, page_range, multi_table_flag)                                                                                                                                                                                   
+        
+        df_html_list = []
+        # Handle each dataframe returned by the helper method 
+        for index, df in enumerate(df_list): 
+            df_html_list.append(df.to_html()) # HTML display 
+            csv = df.to_csv(path_or_buf=None) # will be a string 
+            download_name = download_name_list[index] # match to download name 
+            download_bucket.put_object(Key=download_name, Body=csv) # put in downlad bucket
 
-        # df_result, download_name = (s3.Object('tablereader', filename).get()['Body'], filename)  
-        # df_result, download_name = (tabulaParse(os.path.join(basedir, app.config['UPLOAD_FOLDER'], filename), filename))        
-        # df_result, download_name = (tabulaParse(os.path.join(basedir, app.config['TEMP_FOLDER'], filename), filename))  
-        df_result, download_name = tabulaParse(path_to_bucket, filename)                                                                                                                                                                                   
-        df_result_html = df_result.to_html();
-
-        csv_buffer = BytesIO()
-        df_result.to_csv(csv_buffer)
-
-        download_bucket.put_object(Key=download_name, Body=csv_buffer.getvalue())
-
-        # # save cleaned file for download 
-        # df_result.to_csv(os.path.join(os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)))
-        # df_result.to_csv(os.path.join(os.path.join(basedir, app.config['TEMP_FOLDER'], download_name)))
-
-        return render_template('upload.html', data=df_result_html, filename=filename, dname=download_name)
+        return render_template('upload.html', data=df_html_list, filename=filename, dnamelist=download_name_list)
 
     # Error handling: form not validated 
     else:
@@ -142,22 +110,58 @@ def upload():
 #---------------------------------------------------------------
 
 # Tabula file processing helper method 
-def tabulaParse(file_contents, filename):
-    print "I am in the tabulaParse method"
-    print "file contents: " + file_contents
+def tabulaParse(file_contents, filename, pages, multitable):
 
-    df = tabula.read_pdf(file_contents) # argument: file name (ex. 'data.pdf')
+    # Multiple page handling
+    if pages: 
+        df = tabula.read_pdf(file_contents, pages=pages, multiple_tables=True)     
+    else:
+        # Multiple table handling
+        if multitable is True: 
+            df = tabula.read_pdf(file_contents, multiple_tables=True) 
+        else:
+            df = []
+            temp = tabula.read_pdf(file_contents) 
+            df.append(temp)
+
+    # File download name handling 
+    download_name_list = []
+    number_of_files = len(df) 
+
     file_chopped = ""
     if (filename.endswith(".pdf")):
         file_chopped = filename[:-len(".pdf")]
-    download_name = file_chopped + '_output.csv'
-    return df, download_name 
+    # download_name = file_chopped + '_output.csv'
+
+    for i in range(0, number_of_files):
+        download_name = file_chopped + '_' + str(i + 1) + '_output.csv'
+        download_name_list.append(download_name)
+
+    print "download name list: ", download_name_list
+
+    # Returns a list of dataframes and a list of download names 
+    return df, download_name_list 
 
 #---------------------------------------------------------------
 
 @app.route('/download', methods = ['GET', 'POST'])
 def download():
-    download_name = request.form['filename']
+
+    download_list = request.form['filename']
+    download_list = ast.literal_eval(download_list) # convert string to list
+
+    memory_file = BytesIO()
+    zipf = zipfile.ZipFile(memory_file, mode='w', compression=zipfile.ZIP_DEFLATED)
+    # zipf = zipfile.ZipFile('output.zip', mode='w', compression=zipfile.ZIP_DEFLATED)
+    for download_name in download_list: 
+        print "DOWNLOAD NAME IN THE LOOP: ", download_name 
+        file = client.get_object(Bucket=download_bucket_name, Key=download_name)
+        zipf.writestr(download_name, file['Body'].read())
+    zipf.close()
+    memory_file.seek(0)
+
+    return send_file(memory_file, attachment_filename="output.zip", as_attachment=True)
+
     # required: unique filename, location/path to saved CSV
     # basedir = os.path.abspath(os.path.dirname(__file__))
     # location = os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)
@@ -167,12 +171,12 @@ def download():
     # response = make_response(file['Body'].read())
     # response.headers['Content-Type'] = 'text/csv'
 
-    file = client.get_object(Bucket=download_bucket_name, Key=download_name)
-    return Response(
-        file['Body'].read(),
-        mimetype='text/csv',
-        headers={"Content-Disposition": "attachment;filename=output.csv"}
-        )
+    # file = client.get_object(Bucket=download_bucket_name, Key=download_name)
+    # return Response(
+    #     file['Body'].read(),
+    #     mimetype='text/csv',
+    #     headers={"Content-Disposition": "attachment;filename=output.csv"}
+    #     )
 
 #----------------------------------------------------
 
