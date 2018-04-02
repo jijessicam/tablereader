@@ -8,6 +8,11 @@
       href="{{url_for('static', filename='css/main.css')}}">
 {% endblock %}
 
+{% block head %}
+{{super()}}
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+{% endblock %}
+
 {% block title %}
 {% if title %}{{ title }} - TableReader</title>
 {% else %}TableReader{% endif %}
