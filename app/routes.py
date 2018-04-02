@@ -101,7 +101,7 @@ def upload():
             download_name = download_name_list[index] # match to download name 
             download_bucket.put_object(Key=download_name, Body=csv) # put in downlad bucket
 
-        return render_template('upload.html', data=df_html_list, filename=filename, dnamelist=download_name_list)
+        return render_template('upload.html', data=zip(df_html_list, download_name_list), filename=filename)
 
     # Error handling: form not validated 
     else:
@@ -148,17 +148,28 @@ def download():
     download_list = request.form['filename']
     download_list = ast.literal_eval(download_list) # convert string to list
 
-    memory_file = BytesIO()
-    zipf = zipfile.ZipFile(memory_file, mode='w', compression=zipfile.ZIP_DEFLATED)
-    # zipf = zipfile.ZipFile('output.zip', mode='w', compression=zipfile.ZIP_DEFLATED)
-    for download_name in download_list: 
-        print "DOWNLOAD NAME IN THE LOOP: ", download_name 
+    # Single file handling 
+    if (len(download_list) == 1):
+        # memory_file = BytesIO()
+        download_name = download_list[0]
         file = client.get_object(Bucket=download_bucket_name, Key=download_name)
-        zipf.writestr(download_name, file['Body'].read())
-    zipf.close()
-    memory_file.seek(0)
+        return Response(
+            file['Body'].read(),
+            mimetype='text/csv',
+            headers={"Content-Disposition": "attachment;filename=output.csv"}
+            )
+    # Multi-file/zip directory handling 
+    else:   
+        memory_file = BytesIO()
+        zipf = zipfile.ZipFile(memory_file, mode='w', compression=zipfile.ZIP_DEFLATED)
+        # zipf = zipfile.ZipFile('output.zip', mode='w', compression=zipfile.ZIP_DEFLATED)
+        for download_name in download_list: 
+            file = client.get_object(Bucket=download_bucket_name, Key=download_name)
+            zipf.writestr(download_name, file['Body'].read())
+        zipf.close()
+        memory_file.seek(0)
 
-    return send_file(memory_file, attachment_filename="output.zip", as_attachment=True)
+        return send_file(memory_file, attachment_filename="output.zip", as_attachment=True)
 
     # required: unique filename, location/path to saved CSV
     # basedir = os.path.abspath(os.path.dirname(__file__))

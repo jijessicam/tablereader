@@ -28,25 +28,58 @@
 
 {% block app_content %}
 
-{% for dataframe in data %}
-      <p>{{ dataframe | safe }} </p>
-{% endfor %}
+<head>
+	<link rel="stylesheet" type="text/css"
+      href="{{url_for('static', filename='slick/slick/slick.css')}}"/>
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='slick/slick/slick-theme.css')}}"/>
+    <style>
+    	.slick-prev:before, .slick-next:before {
+    		color: black !important;
+    	}
+	</style>
+</head>
 
-<!-- {{ data | safe }} -->
+<body>
+	
+	<!-- input file name  -->
+	{{ filename }}
 
-{{ filename }}
+	<div class="dfs">
+		{% for dataframe, dname in data %}
+		      <div>
+		      	{{ dname | safe }}
+		      	{{ dataframe | safe }}
+		      </div>
+		{% endfor %}
+	</div>
 
-{% for dname in dnamelist %}
-	<p>{{ dname | safe }}</p>
-{% endfor %}
+	<form id="download-form" action="{{ url_for('download') }}" method="post">
+		<input type="hidden" id="filename" name="filename" value="{{ dnamelist | safe }}">
+		<input type="submit" class="custom-button" value="Download as CSV">
+	</form>
 
-{{ dnamelist | safe }}
+	{% block scripts %}
+		{{ super() }}
+		<script type="text/javascript" src="{{url_for('static', filename='slick/slick/slick.min.js')}}"></script>
 
-<!-- {{ dnamelist }} -->
+		<script type="text/javascript">
+			function initializeSlider() {
+				$('.dfs').not('.slick-initialized').slick({
+					dots: true,
+					infinite: true,
+					speed: 350,
+					arrows: true, 
+					slidesToShow: 1,
+					adaptiveHeight: true
+				});
+			}
 
-<form id="download-form" action="{{ url_for('download') }}" method="post">
-	<input type="hidden" id="filename" name="filename" value="{{ dnamelist | safe }}">
-	<input type="submit" class="custom-button" value="Download">
-</form>
+			initializeSlider();
+
+			$(window).on( 'resize', initializeSlider );
+		</script>
+	{% endblock %}
+
+</body>
 
 {% endblock %}
