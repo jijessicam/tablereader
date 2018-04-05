@@ -158,8 +158,11 @@ def tabulaParse(file_contents, filename, pages, multitable):
 @app.route('/download', methods = ['GET', 'POST'])
 def download():
 
-    download_list = request.form['filename']
-    download_list = ast.literal_eval(download_list) # convert string to list
+    dlist = request.form['filename']
+    # download_list = ast.literal_eval(download_list) # convert string to list
+    download_list = eval(dlist)
+
+    print "DOWNLOAD LIST: ", dlist 
 
     # Single file handling 
     if (len(download_list) == 1):
