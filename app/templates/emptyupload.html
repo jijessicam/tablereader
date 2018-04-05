@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+
+<body>
+	<h1>No File Selected</h1>
+	<!-- error handling for empty file upload -->
+	<div class="isa_error">
+		<i class="fa fa-times-circle"></i>
+		<p>Please select a .pdf file to upload.</p>
+	</div>
+	<p><a href="{{ url_for('index') }}">Go Back</a></p>
+
+</body>
+
+
+{% endblock %}
+	

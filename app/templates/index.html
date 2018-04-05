@@ -6,6 +6,15 @@
 	<div id="loading" style="display:none;"></div>
 	<div id="content">
 		<h1>Upload PDF File</h1>
+		
+		<!-- error handling for empty file upload -->
+		{% for message in form.file_upload.error %}
+			<div class="isa_error">
+				<i class="fa fa-times-circle"></i>
+				{{ message }}
+			</div>
+		{% endfor %}
+
 		<form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
 			{{ form.hidden_tag() }}
 			<p>{{ form.file_upload }}</p>

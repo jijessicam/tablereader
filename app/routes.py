@@ -23,6 +23,7 @@ import urllib
 from flask_wtf import FlaskForm 
 from flask_wtf.file import FileField, FileRequired
 from wtforms import StringField, SubmitField, BooleanField
+from wtforms import validators, ValidationError 
 
 #---------------------------------------------------------------
 # APP CONFIG 
@@ -49,10 +50,10 @@ download_bucket_name = 'tablereader-downloads'
 
 # Flask-WTF web form class
 class FileUploadForm(FlaskForm):
-    file_upload = FileField(validators=[FileRequired()])
+    file_upload = FileField(validators=[FileRequired("Please select a PDF file to upload.")])
     page_range = StringField('Page Range')
     multiple_tables = BooleanField('Does your file contain multiple tables on the same page?')
-    submit = SubmitField('Upload')
+    submit = SubmitField('Upload File')
 
 #---------------------------------------------------------------
 
@@ -66,6 +67,18 @@ def allowed_file(filename):
 def index():
     form = FileUploadForm()
     return render_template('index.html', title='Home', form=form)
+
+#---------------------------------------------------------------
+
+@app.route('/about')
+def about():
+    return render_template('about.html', title='About')
+
+#---------------------------------------------------------------
+
+@app.route('/docs')
+def docs():
+    return render_template('docs.html', title='Documentation')
 
 #---------------------------------------------------------------
 
@@ -105,7 +118,7 @@ def upload():
 
     # Error handling: form not validated 
     else:
-        return render_template('404.html') 
+        return render_template('emptyupload.html') 
     
 #---------------------------------------------------------------
 
