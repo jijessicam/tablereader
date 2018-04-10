@@ -114,7 +114,8 @@ def upload():
             download_name = download_name_list[index] # match to download name 
             download_bucket.put_object(Key=download_name, Body=csv) # put in downlad bucket
 
-        return render_template('upload.html', data=zip(df_html_list, download_name_list), filename=filename)
+        # return render_template('upload.html', data=zip(df_html_list, download_name_list), filename=filename)
+        return render_template('upload.html', tables=zip(df_html_list, download_name_list), dnames=download_name_list, filename=filename)
 
     # Error handling: form not validated 
     else:
@@ -159,10 +160,10 @@ def tabulaParse(file_contents, filename, pages, multitable):
 def download():
 
     dlist = request.form['filename']
-    # download_list = ast.literal_eval(download_list) # convert string to list
-    download_list = eval(dlist)
-
-    print "DOWNLOAD LIST: ", dlist 
+    if dlist: 
+      download_list = ast.literal_eval(dlist) # convert string to list
+    else: 
+      return render_template('404.html') 
 
     # Single file handling 
     if (len(download_list) == 1):
@@ -187,82 +188,68 @@ def download():
 
         return send_file(memory_file, attachment_filename="output.zip", as_attachment=True)
 
-    # required: unique filename, location/path to saved CSV
-    # basedir = os.path.abspath(os.path.dirname(__file__))
-    # location = os.path.join(basedir, app.config['DOWNLOAD_FOLDER'], download_name)
-    # return send_file(location, mimetype='text/csv', attachment_filename=download_name, as_attachment=True)
-    
-    # file = client.get_object(Bucket='tablereader-downloads', Key=download_name)
-    # response = make_response(file['Body'].read())
-    # response.headers['Content-Type'] = 'text/csv'
+#----------------------------------------------------
 
-    # file = client.get_object(Bucket=download_bucket_name, Key=download_name)
-    # return Response(
-    #     file['Body'].read(),
-    #     mimetype='text/csv',
-    #     headers={"Content-Disposition": "attachment;filename=output.csv"}
-    #     )
+# @app.route('/test', methods = ['GET'])
+# def test():
+#   return render_template('upload_form.html', landing_page = 'process')
 
 #----------------------------------------------------
 
-@app.route('/test', methods = ['GET'])
-def test():
-  return render_template('upload_form.html', landing_page = 'process')
+# @app.route('/process', methods = ['GET','POST'])
+# def process():
+#   if request.method == 'POST':
+#     file = request.files['file']
+#     hocr = request.form.get('hocr') or ''
+#     ext = '.hocr' if hocr else '.txt'
+#     if file and allowed_file(file.filename):
+#       folder = os.path.join(app.config['TEMP_FOLDER'], str(os.getpid()))
 
-@app.route('/process', methods = ['GET','POST'])
-def process():
-  if request.method == 'POST':
-    file = request.files['file']
-    hocr = request.form.get('hocr') or ''
-    ext = '.hocr' if hocr else '.txt'
-    if file and allowed_file(file.filename):
-      folder = os.path.join(app.config['TEMP_FOLDER'], str(os.getpid()))
+#       os.mkdir(folder)
+#       input_file = os.path.join(folder, secure_filename(file.filename))
+#       output_file = os.path.join(folder, app.config['OCR_OUTPUT_FILE'])
+#       file.save(input_file)
 
-      os.mkdir(folder)
-      input_file = os.path.join(folder, secure_filename(file.filename))
-      output_file = os.path.join(folder, app.config['OCR_OUTPUT_FILE'])
-      file.save(input_file)
+#       print "input file check: ", os.path.isfile(input_file)
+#       print "input file path: ", input_file 
+#       print "output file path: ", output_file 
 
-      print "input file check: ", os.path.isfile(input_file)
-      print "input file path: ", input_file 
-      print "output file path: ", output_file 
+#       command = ['tesseract', input_file, output_file, '-l', request.form['lang'], hocr]
+#       proc = subprocess.Popen(command, stderr=subprocess.PIPE)
+#       proc.wait()
 
-      command = ['tesseract', input_file, output_file, '-l', request.form['lang'], hocr]
-      proc = subprocess.Popen(command, stderr=subprocess.PIPE)
-      proc.wait()
+#       output_file += ext
 
-      output_file += ext
+#       print output_file 
+#       print "output file exists check: ", os.path.exists(output_file)
+#       print "output file is file check: ", os.path.isfile(output_file)
 
-      print output_file 
-      print "output file exists check: ", os.path.exists(output_file)
-      print "output file is file check: ", os.path.isfile(output_file)
+#       if os.path.isfile(output_file):
+#         f = open(output_file)
+#         resp = jsonify( {
+#           u'status': 200,
+#           u'ocr':{k:v.decode('utf-8') for k,v in enumerate(f.read().splitlines())}
+#         } )
+#       else:
+#         resp = jsonify( {
+#           u'status': 422,
+#           u'message': u'Unprocessable Entity'
+#         } )
+#         resp.status_code = 422
 
-      if os.path.isfile(output_file):
-        f = open(output_file)
-        resp = jsonify( {
-          u'status': 200,
-          u'ocr':{k:v.decode('utf-8') for k,v in enumerate(f.read().splitlines())}
-        } )
-      else:
-        resp = jsonify( {
-          u'status': 422,
-          u'message': u'Unprocessable Entity'
-        } )
-        resp.status_code = 422
-
-      shutil.rmtree(folder)
-      return resp
-    else:
-      resp = jsonify( { 
-        u'status': 415,
-        u'message': u'Unsupported Media Type' 
-      } )
-      resp.status_code = 415
-      return resp
-  else:
-    resp = jsonify( { 
-      u'status': 405, 
-      u'message': u'The method is not allowed for the requested URL' 
-    } )
-    resp.status_code = 405
-    return resp
+#       shutil.rmtree(folder)
+#       return resp
+#     else:
+#       resp = jsonify( { 
+#         u'status': 415,
+#         u'message': u'Unsupported Media Type' 
+#       } )
+#       resp.status_code = 415
+#       return resp
+#   else:
+#     resp = jsonify( { 
+#       u'status': 405, 
+#       u'message': u'The method is not allowed for the requested URL' 
+#     } )
+#     resp.status_code = 405
+#     return resp
