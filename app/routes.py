@@ -27,24 +27,20 @@ from wtforms import StringField, SubmitField, BooleanField
 from wtforms import validators, ValidationError 
 import ftfy
 
-from bokeh import plotting, models
-from bokeh.models import widgets, ColumnDataSource 
-from bokeh.models.widgets import DataTable, TableColumn
-from bokeh.embed import components 
-
 #---------------------------------------------------------------
 # APP CONFIG 
 #---------------------------------------------------------------
 
-UPLOAD_FOLDER = './uploads'         # previously: './uploads' (on local) (should be 'tmp')
-DOWNLOAD_FOLDER = './downloads' # how to deal with this???
-TEMP_FOLDER = '/tmp'
-ALLOWED_EXTENSIONS = set(['pdf', 'txt', 'jpg', 'png', 'jpeg'])
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
-app.config['TEMP_FOLDER'] = TEMP_FOLDER
-app.config['OCR_OUTPUT_FILE'] = 'ocr'
-app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
+# UPLOAD_FOLDER = './uploads'         # previously: './uploads' (on local) (should be 'tmp')
+# DOWNLOAD_FOLDER = './downloads' # how to deal with this???
+# TEMP_FOLDER = '/tmp'
+# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
+# app.config['TEMP_FOLDER'] = TEMP_FOLDER
+# app.config['OCR_OUTPUT_FILE'] = 'ocr'
+# app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
+
+ALLOWED_EXTENSIONS = set(['pdf'])
 
 client = boto3.client('s3')
 resource = boto3.resource('s3')
@@ -66,7 +62,8 @@ class FileUploadForm(FlaskForm):
     drop_duplicate_rows = BooleanField('Delete duplicate rows')
     highlight_duplicate_rows = BooleanField('Highlight duplicate rows')
     highlight_nans = BooleanField('Highlight missing data')
-    potential_issues = BooleanField('Highlight potential issues')
+    highlight_headers = BooleanField('Attempt to approximate and highlight table headers')
+    color_bad_cells = BooleanField('Color potentially erroneous values red')
 
     submit = SubmitField('Upload File')
 
@@ -121,7 +118,8 @@ def upload():
         drop_duplicate_rows = form.drop_duplicate_rows.data
         highlight_duplicate_rows = form.highlight_duplicate_rows.data
         highlight_nans = form.highlight_nans.data
-        potential_issues = form.potential_issues.data
+        highlight_headers = form.highlight_headers.data
+        color_bad_cells = form.color_bad_cells.data
 
         upload_bucket.put_object(Key=filename, Body=file.stream, ContentType=file.content_type)
         path_to_bucket = 'https://' + upload_bucket_name + '.s3.amazonaws.com/' + filename
@@ -130,16 +128,10 @@ def upload():
         df_list, download_name_list = tabulaParse(path_to_bucket, filename, page_range, multi_table_flag)                                                                                                                                                                                   
         
         df_html_list = []
-        bokeh_display_list = []
 
         # Handle each dataframe returned by the helper method 
         for index, df in enumerate(df_list): 
             # df_html_list.append(df.to_html()) # HTML display 
-            # # Build Bokeh DataTable from pandas dataframe
-            # table_source = ColumnDataSource(df)
-            # bokeh_table = DataTable(source=table_source)
-            # # Add Bokeh DT to list 
-            # bokeh_display_list.append(bokeh_table)
 
             if unicode_fix:
                 df = fixTableEncoding(df)
@@ -149,18 +141,20 @@ def upload():
                 df = df.drop_duplicates()
 
             # Highlight problems: create boolean type map 
-            num_map = typeMapper(df)
+            bool_map = typeMapper(df)
+            header_list, modified_bool_map = identifyHeaders(bool_map)
+            val_flag_dict = nonUniqueColumnValues(modified_bool_map)
 
-            colored_table = flagColors(df, highlight_duplicate_rows, highlight_nans, potential_issues)
+            colored_table = flagColors(df, highlight_duplicate_rows, highlight_nans, highlight_headers,
+                color_bad_cells, header_list, val_flag_dict)
             df_html_list.append(colored_table)
 
             csv = df.to_csv(path_or_buf=None, encoding='utf-8') # will be a string 
             download_name = download_name_list[index] # match to download name 
             download_bucket.put_object(Key=download_name, Body=csv) # put in download bucket
 
-        # script, div = components(bokeh_display_list)
 
-        return render_template('upload.html', tables=zip(div, download_name_list), dnames=download_name_list, filename=filename)
+        return render_template('upload.html', tables=zip(df_html_list, download_name_list), dnames=download_name_list, filename=filename)
         # return render_template('upload.html', tables=zip(df_html_list, download_name_list), dnames=download_name_list, filename=filename)
 
     # Error handling: form not validated 
@@ -235,18 +229,37 @@ def fixTextEncoding(text):
 
 # Helper method: dataframe coloring 
 # Takes dataframe, boolean map as input 
-def flagColors(input_dataframe, highlight_duplicates, highlight_nans, potential_issues):
+def flagColors(input_dataframe, highlight_duplicates, highlight_nans, highlight_headers, color_bad_cells, header_list, index_dict):
     df = input_dataframe
     RED = '#fc5d58'
 
-    # RED -----------------------------
-    # 1) flag all NaNs
-    # df = df.style.highlight_null(null_color=RED)
-    # df = df.style.set_table_attributes('border=1')
+    func_call = 'df.style'
 
-    df = df.style. \
-        highlight_null(null_color=RED). \
-        set_table_attributes('border=1')
+    if highlight_headers: 
+        func_call += '.set_properties(subset=pd.IndexSlice[header_list, :], **{\'background-color\': \'green\'})'
+    if highlight_nans:
+        func_call += '.highlight_null(null_color=RED)'
+    if highlight_duplicates:
+        func_call += '.apply(highlightDuplicateRows)'
+    if color_bad_cells: 
+        func_call += '.apply(colorProblematicCells, args=(index_dict,))'
+
+    func_call += '.set_table_attributes(\'border=1\')'
+
+    # # ALL FLAGS SET 
+    # if highlight_duplicates and highlight_nans and highlight_headers and color_bad_cells: 
+    #     df = df.style. \
+    #         set_properties(subset=pd.IndexSlice[header_list, :], **{'background-color': 'green'}). \
+    #         highlight_null(null_color=RED). \
+    #         apply(highlightDuplicateRows). \
+    #         apply(colorProblematicCells, args=(index_dict,)). \
+    #         set_table_attributes('border=1')
+
+    # # NO FLAGS SET 
+    # if not highlight_duplicates and not highlight_nans and not highlight_headers and not color_bad_cells: 
+    #     df = df.style.set_table_attributes('border=1')
+
+    df = eval(func_call)
 
     return df.render()
 
@@ -258,7 +271,7 @@ def highlightDuplicateRows(input_dataframe):
     d = df.duplicated()
     dupe_rows = [i for i, x in enumerate(d) if x] # list of dupe indices
     for index in dupe_rows:
-        df.iloc[[index]] = 'background-color: yellow'
+        df.iloc[[index],:] = 'background-color: yellow'
     return df 
 
 #---------------------------------------------------------------
@@ -281,7 +294,7 @@ def identifyHeaders(boolean_map):
             continue 
 
     if mismatch_index > 0:
-        header_list = range(1, mismatch_index)
+        header_list = range(0, mismatch_index)
     else: 
         header_list = []
         return header_list, df 
@@ -292,12 +305,17 @@ def identifyHeaders(boolean_map):
 
 #---------------------------------------------------------------
 
-def colorNonUniqueColumnValues(cell_dict):
-    d = cell_dict 
+def colorProblematicCells(input_dataframe, index_dict):
 
-    for key, index_list in d.iteritems():
-        for index in index_list: 
-            
+    df = input_dataframe 
+    for col_name, index_list in index_dict.iteritems():
+        for index in index_list:
+            # print index, ", ", col_name 
+            # print df.name 
+            if df.name == col_name:
+                df.iloc[index] = 'color: red'
+            # df.iloc[index, df.columns.get_loc(col_name)] = 'color: red'
+    return df 
 
 #---------------------------------------------------------------
 
