@@ -20,10 +20,30 @@
 			<p>{{ form.file_upload }}</p>
 			<p>
 				{{  form.page_range.label }}<br>
+				Enter page numbers as integers separated by commas (for example, "1, 2, 3" or "1, 5, 10.")<br>
 				{{  form.page_range }}
 			</p>
 			<p>
 				{{ form.multiple_tables() }} {{ form.multiple_tables.label }}<br>
+			</p>
+			<p></p>
+			<p>
+				{{ form.unicode_fix() }} {{ form.unicode_fix.label }}<br>
+			</p>
+			<p>
+				{{ form.nans_to_none() }} {{ form.nans_to_none.label }}<br>
+			</p>
+			<p>
+				{{ form.drop_duplicate_rows() }} {{ form.drop_duplicate_rows.label }}<br>
+			</p>
+			<p>
+				{{ form.highlight_duplicate_rows() }} {{ form.highlight_duplicate_rows.label }}<br>
+			</p>
+			<p>
+				{{ form.highlight_nans() }} {{ form.highlight_nans.label }}<br>
+			</p>
+			<p>
+				{{ form.potential_issues() }} {{ form.potential_issues.label }}<br>
 			</p>
 			<p><input type="submit" value="Upload" class="custom-button" onclick="loading();"></p>
 		</form>
