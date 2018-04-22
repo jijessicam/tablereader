@@ -153,7 +153,6 @@ def upload():
             download_name = download_name_list[index] # match to download name 
             download_bucket.put_object(Key=download_name, Body=csv) # put in download bucket
 
-
         return render_template('upload.html', tables=zip(df_html_list, download_name_list), dnames=download_name_list, filename=filename)
         # return render_template('upload.html', tables=zip(df_html_list, download_name_list), dnames=download_name_list, filename=filename)
 
