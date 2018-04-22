@@ -235,14 +235,17 @@ def flagColors(input_dataframe, highlight_nans, highlight_headers, color_bad_cel
     df = input_dataframe
     df = df.applymap(mapAllToString)
 
-    RED = '#fc5d58'
+    RED = '#DF744A'
+    BLUE = '#66B9BF'
+    YELLOW = '#F7EF6A'
 
     func_call = 'df.style'
 
     if highlight_headers: 
-        func_call += '.set_properties(subset=pd.IndexSlice[header_list, :], **{\'background-color\': \'green\'})'
+        func_call += '.set_properties(subset=pd.IndexSlice[header_list, :], **{\'background-color\': \'#66B9BF\'})'
     if highlight_nans:
-        func_call += '.highlight_null(null_color=RED)'
+        # func_call += '.highlight_null(null_color=\'red\')'
+        func_call += '.applymap(highlightNullValues)'
     # if highlight_duplicates:
     #     func_call += '.apply(highlightDuplicateRows)'
     if color_bad_cells: 
@@ -272,6 +275,13 @@ def flagColors(input_dataframe, highlight_nans, highlight_headers, color_bad_cel
 def mapAllToString(value):
     strval = str(value)
     return strval 
+
+#---------------------------------------------------------------
+
+def highlightNullValues(value):
+    if pd.isnull(value):
+        value = 'background-color: red'
+    return value 
 
 #---------------------------------------------------------------
 
@@ -337,7 +347,7 @@ def colorProblematicCells(input_dataframe, index_dict):
 
     for col_name, index_list in index_dict.iteritems():
         for index in index_list: 
-            df.loc[index, col_name] = 'background-color: blue'
+            df.loc[index, col_name] = 'background-color: #F7EF6A'
 
     return df 
 #---------------------------------------------------------------
