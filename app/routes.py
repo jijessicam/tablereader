@@ -57,10 +57,10 @@ class FileUploadForm(FlaskForm):
     page_range = StringField('Page Range')
     multiple_tables = BooleanField('Does your file contain multiple tables on the same page?')
     
-    unicode_fix = BooleanField('Fix potential Unicode character encoding errors.')
+    unicode_fix = BooleanField('Fix potential Unicode character encoding errors')
     nans_to_none = BooleanField('Replace all NaNs with None (useful for database entry)')
     drop_duplicate_rows = BooleanField('Delete duplicate rows')
-    highlight_duplicate_rows = BooleanField('Highlight duplicate rows')
+    # highlight_duplicate_rows = BooleanField('Highlight duplicate rows')
     highlight_nans = BooleanField('Highlight missing data')
     highlight_headers = BooleanField('Attempt to approximate and highlight table headers')
     color_bad_cells = BooleanField('Color potentially erroneous values red')
@@ -116,7 +116,7 @@ def upload():
         unicode_fix = form.unicode_fix.data
         nans_to_none = form.nans_to_none.data
         drop_duplicate_rows = form.drop_duplicate_rows.data
-        highlight_duplicate_rows = form.highlight_duplicate_rows.data
+        # highlight_duplicate_rows = form.highlight_duplicate_rows.data
         highlight_nans = form.highlight_nans.data
         highlight_headers = form.highlight_headers.data
         color_bad_cells = form.color_bad_cells.data
@@ -145,8 +145,8 @@ def upload():
             header_list, modified_bool_map = identifyHeaders(bool_map)
             val_flag_dict = nonUniqueColumnValues(modified_bool_map)
 
-            colored_table = flagColors(df, highlight_duplicate_rows, highlight_nans, highlight_headers,
-                color_bad_cells, header_list, val_flag_dict)
+            colored_table = flagColors(df, highlight_nans, highlight_headers,
+                color_bad_cells, header_list, val_flag_dict) # removed highlight_duplicate_rows 
             df_html_list.append(colored_table)
 
             csv = df.to_csv(path_or_buf=None, encoding='utf-8') # will be a string 
@@ -219,7 +219,10 @@ def fixTableEncoding(input_dataframe):
 
 def fixTextEncoding(text):
     if isinstance(text, basestring):
-        t = bytes.decode(text) # decode to utf-8
+        if isinstance(text, str):
+            t = bytes.decode(text) # decode to utf-8
+        elif isinstance(text, unicode):
+            t = text 
         return ftfy.fix_text(t) # ftfy library call
     else:
         return 
@@ -228,8 +231,10 @@ def fixTextEncoding(text):
 
 # Helper method: dataframe coloring 
 # Takes dataframe, boolean map as input 
-def flagColors(input_dataframe, highlight_duplicates, highlight_nans, highlight_headers, color_bad_cells, header_list, index_dict):
+def flagColors(input_dataframe, highlight_nans, highlight_headers, color_bad_cells, header_list, index_dict):
     df = input_dataframe
+    df = df.applymap(mapAllToString)
+
     RED = '#fc5d58'
 
     func_call = 'df.style'
@@ -238,8 +243,8 @@ def flagColors(input_dataframe, highlight_duplicates, highlight_nans, highlight_
         func_call += '.set_properties(subset=pd.IndexSlice[header_list, :], **{\'background-color\': \'green\'})'
     if highlight_nans:
         func_call += '.highlight_null(null_color=RED)'
-    if highlight_duplicates:
-        func_call += '.apply(highlightDuplicateRows)'
+    # if highlight_duplicates:
+    #     func_call += '.apply(highlightDuplicateRows)'
     if color_bad_cells: 
         func_call += '.apply(colorProblematicCells, args=(index_dict,))'
 
@@ -260,7 +265,13 @@ def flagColors(input_dataframe, highlight_duplicates, highlight_nans, highlight_
 
     df = eval(func_call)
 
-    return df.render()
+    return df.render() 
+
+#---------------------------------------------------------------
+
+def mapAllToString(value):
+    strval = str(value)
+    return strval 
 
 #---------------------------------------------------------------
 
@@ -270,7 +281,7 @@ def highlightDuplicateRows(input_dataframe):
     d = df.duplicated()
     dupe_rows = [i for i, x in enumerate(d) if x] # list of dupe indices
     for index in dupe_rows:
-        df.iloc[[index],:] = 'background-color: yellow'
+        df.iloc[[index]] = 'background-color: yellow'
     return df 
 
 #---------------------------------------------------------------
@@ -304,18 +315,31 @@ def identifyHeaders(boolean_map):
 
 #---------------------------------------------------------------
 
+# def colorProblematicCells(input_dataframe, index_dict):
+
+#     df = input_dataframe 
+#     for col_name, index_list in index_dict.iteritems():
+#         for index in index_list:
+#             # print index, ", ", col_name 
+#             # print df.name 
+#             if df.name == col_name:
+#                 df.iloc[index] = 'background-color: gray'
+#             # df.iloc[index, df.columns.get_loc(col_name)] = 'color: red'
+
+#     print df 
+#     print "DATA TYPES: "
+#     print df.dtypes
+
+#     return df 
+
 def colorProblematicCells(input_dataframe, index_dict):
+    df = input_dataframe.copy()
 
-    df = input_dataframe 
     for col_name, index_list in index_dict.iteritems():
-        for index in index_list:
-            # print index, ", ", col_name 
-            # print df.name 
-            if df.name == col_name:
-                df.iloc[index] = 'color: red'
-            # df.iloc[index, df.columns.get_loc(col_name)] = 'color: red'
-    return df 
+        for index in index_list: 
+            df.loc[index, col_name] = 'background-color: blue'
 
+    return df 
 #---------------------------------------------------------------
 
 # Helper method: returns a dict of {col name, [list of row indices]} to flag irregular data 
@@ -331,10 +355,10 @@ def nonUniqueColumnValues(boolean_map):
     flag_dict = {}
 
     for col_name, column in df.iteritems():
-        if val_counts.iloc[0][col_name] < val_counts.iloc[1][col_name]:
+        if (2*val_counts.iloc[0][col_name]) < val_counts.iloc[1][col_name]:
             index_list = df.index[df[col_name] == val_counts.iloc[0].name].tolist()
             flag_dict[col_name] = index_list
-        else: 
+        elif (2*val_counts.iloc[1][col_name]) < val_counts.iloc[0][col_name]:
             index_list = df.index[df[col_name] == val_counts.iloc[1].name].tolist()
             flag_dict[col_name] = index_list
 
