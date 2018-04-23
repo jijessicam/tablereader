@@ -385,6 +385,12 @@ def typeMapper(input_dataframe):
 
 def regexMapHelper(obj):
 
+    # num = re.compile(ur"^[+-]?\d+(?:(\.|,)\d+)?$", re.UNICODE)
+    # # Matches numbers in this format: 1,234,567 
+    # num2 = re.compile(ur"^((?:\d{1,3},(?:\d{3},)*\d{3})|(?:\d{1,3}))$", re.UNICODE)
+    # # Modification to accomodate commas and decimals 
+    # num3 = re.compile(ur"^[+-]?[\d,]+(?:(\.|,)\d+)?$", re.UNICODE)
+
     num = re.compile(r"^[+-]?\d+(?:(\.|,)\d+)?$")
 
     # Matches numbers in this format: 1,234,567 
@@ -394,6 +400,8 @@ def regexMapHelper(obj):
     num3 = re.compile(r"^[+-]?[\d,]+(?:(\.|,)\d+)?$")
 
     cell = str(obj) # convert to string 
+
+    # cell = obj
 
     if num.match(cell):
         return True 
