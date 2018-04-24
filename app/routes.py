@@ -337,12 +337,6 @@ def identifyHeaders(boolean_map):
 #             # print df.name 
 #             if df.name == col_name:
 #                 df.iloc[index] = 'background-color: gray'
-#             # df.iloc[index, df.columns.get_loc(col_name)] = 'color: red'
-
-#     print df 
-#     print "DATA TYPES: "
-#     print df.dtypes
-
 #     return df 
 
 def colorProblematicCells(input_dataframe, index_dict):
@@ -351,7 +345,9 @@ def colorProblematicCells(input_dataframe, index_dict):
     for col_name, index_list in index_dict.iteritems():
         for index in index_list: 
             if index in df.index: 
-                df.loc[index, col_name] = 'background-color: #F7EF6A'
+                if df.name == col_name: 
+                    df[index] = 'background-color: #F7EF6A'
+                # df.loc[index, [col_name]] = 'background-color: #F7EF6A'
 
     return df 
 #---------------------------------------------------------------
