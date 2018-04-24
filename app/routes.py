@@ -61,9 +61,9 @@ class FileUploadForm(FlaskForm):
     nans_to_none = BooleanField('Replace all NaNs with None (useful for database entry)')
     drop_duplicate_rows = BooleanField('Delete duplicate rows')
     # highlight_duplicate_rows = BooleanField('Highlight duplicate rows')
-    highlight_nans = BooleanField('Highlight missing data')
-    highlight_headers = BooleanField('Attempt to approximate and highlight table headers')
-    color_bad_cells = BooleanField('Color potentially erroneous values red')
+    highlight_nans = BooleanField('Highlight missing data in red')
+    highlight_headers = BooleanField('Attempt to approximate and highlight table headers in blue')
+    color_bad_cells = BooleanField('Color potentially erroneous entries yellow')
 
     submit = SubmitField('Upload File')
 
@@ -399,9 +399,12 @@ def regexMapHelper(obj):
     # Modification to accomodate commas and decimals 
     num3 = re.compile(r"^[+-]?[\d,]+(?:(\.|,)\d+)?$")
 
-    cell = str(obj) # convert to string 
+    # cell = str(obj) # convert to string 
 
-    # cell = obj
+    if isinstance(obj, unicode):
+        cell = obj.encode('utf8', 'replace')
+    else:
+        cell = str(obj)
 
     if num.match(cell):
         return True 

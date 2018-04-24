@@ -2,10 +2,13 @@
 
 {% block app_content %}
 
-<body>
+<body id="custom">
 	<div id="loading" style="display:none;"></div>
 	<div id="content">
-		<h1>Upload PDF File</h1>
+		<div id="logo">
+			<img class="center-block" src="{{ url_for('static', filename='logo-regular-cropped.png') }}">
+		</div>
+		<h1 class="display-2 text-center">Upload PDF File</h1>
 		
 		<!-- error handling for empty file upload -->
 		{% for message in form.file_upload.error %}
@@ -17,7 +20,7 @@
 
 		<form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
 			{{ form.hidden_tag() }}
-			<p>{{ form.file_upload }}</p>
+			<p>{{ form.file_upload(class="btn btn-default") }}</p>
 			<p>
 				{{  form.page_range.label }}<br>
 				Enter page numbers as integers separated by commas (for example, "1, 2, 3" or "1, 5, 10.")<br>
@@ -26,26 +29,36 @@
 			<p>
 				{{ form.multiple_tables() }} {{ form.multiple_tables.label }}<br>
 			</p>
-			<p></p>
-			<p>
-				{{ form.unicode_fix() }} {{ form.unicode_fix.label }}<br>
-			</p>
-			<p>
-				{{ form.nans_to_none() }} {{ form.nans_to_none.label }}<br>
-			</p>
-			<p>
-				{{ form.drop_duplicate_rows() }} {{ form.drop_duplicate_rows.label }}<br>
-			</p>
-			<p>
-				{{ form.highlight_nans() }} {{ form.highlight_nans.label }}<br>
-			</p>
-			<p>
-				{{ form.highlight_headers() }} {{ form.highlight_headers.label }}<br>
-			</p>
-			<p>
-				{{ form.color_bad_cells() }} {{ form.color_bad_cells.label }}<br>
-			</p>
-			<p><input type="submit" value="Upload" class="custom-button" onclick="loading();"></p>
+
+			<br>
+
+			<table class="table">
+				<tr>
+					<th></th>
+					<th>Preprocess Table</th>
+					<th></th>
+					<th>Color Display Table Only</th>
+				</tr>
+				<tr>
+					<td class="text-xs-left">{{ form.unicode_fix() }}</td>
+					<td>{{ form.unicode_fix.label(class_="formlabels") }}</td>
+					<td class="text-xs-left">{{ form.highlight_nans() }}</td>
+					<td>{{ form.highlight_nans.label(class_="formlabels") }}</td>
+				</tr>
+				<tr>
+					<td class="text-xs-left">{{ form.nans_to_none() }}</td>
+					<td>{{ form.nans_to_none.label(class_="formlabels") }}</td>
+					<td class="text-xs-left">{{ form.color_bad_cells() }}</td>
+					<td>{{ form.color_bad_cells.label(class_="formlabels") }}</td>
+				</tr>
+				<tr>
+					<td class="text-xs-left">{{ form.drop_duplicate_rows() }}</td>
+					<td>{{ form.drop_duplicate_rows.label(class_="formlabels") }}</td>
+					<td class="text-xs-left">{{ form.highlight_headers() }}</td>
+					<td>{{ form.highlight_headers.label(class_="formlabels") }}</td>
+				</tr>
+			</table>
+			<p><input type="submit" value="Upload PDF File" class="btn btn-primary btn-lg" onclick="loading();"></p>
 		</form>
 	</div>
 </body>

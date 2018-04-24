@@ -10,18 +10,22 @@
     	.slick-prev:before, .slick-next:before {
     		color: black !important;
     	}
+
+		.dfs div {
+			width: 75%;
+			margin: 0 auto;
+		}    
+
+		.display-df table {
+			margin: 0 auto;
+		}	
 	</style>
 </head>
 
 <body>
-	
-	<!-- input file name  -->
-	{{ filename }}
-	{{ dnames | safe }}
-
 	<div class="dfs">
 		{% for dataframe, dname in tables %}
-		      <div>
+		      <div id="display-df", name="display-df">
 		      	{{ dname | safe }}
 		      	{{ dataframe | safe }}
 		      </div>
@@ -30,7 +34,7 @@
 
 	<form id="download-form" action="{{ url_for('download') }}" method="post">
 		<input type="hidden" id="filename" name="filename" value="{{ dnames | safe }}">
-		<input type="submit" class="custom-button" value="Download as CSV">
+		<input type="submit" class="btn btn-primary btn-block" value="Download All Files as CSV">
 	</form>
 
 	{% block scripts %}
@@ -45,7 +49,9 @@
 					speed: 350,
 					arrows: true, 
 					slidesToShow: 1,
-					adaptiveHeight: true
+					adaptiveHeight: true,
+					centerMode: true,
+					centerPadding: '0px'
 				});
 			}
 
