@@ -350,7 +350,8 @@ def colorProblematicCells(input_dataframe, index_dict):
 
     for col_name, index_list in index_dict.iteritems():
         for index in index_list: 
-            df.loc[index, col_name] = 'background-color: #F7EF6A'
+            if index in df.index: 
+                df.loc[index, col_name] = 'background-color: #F7EF6A'
 
     return df 
 #---------------------------------------------------------------

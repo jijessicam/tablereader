@@ -15,6 +15,10 @@ h1, body, content {
   font-family: 'PT Serif', serif;
 }
 
+.navbar-brand {
+  color: white;
+}
+
 .navbar-default .navbar-nav > li > a:hover, .navbar-default .navbar-nav > li > a:focus {
     /*color: #000;*/ /*Sets the text hover color on navbar*/
     color: white;
@@ -23,7 +27,7 @@ h1, body, content {
 .navbar-default .navbar-nav > .active > a, .navbar-default .navbar-nav > .active >
         a:hover, .navbar-default .navbar-nav > .active > a:focus {
     color: white; /*BACKGROUND color for active*/
-    background-color: #030033;
+    background-color: #859ec6;
 }
 
 .navbar-default .navbar-nav > li > a {
