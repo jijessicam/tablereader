@@ -273,7 +273,10 @@ def flagColors(input_dataframe, highlight_nans, highlight_headers, color_bad_cel
 #---------------------------------------------------------------
 
 def mapAllToString(value):
-    strval = str(value)
+    if isinstance(value, unicode):
+        strval = value.encode('utf8', 'replace')
+    else:
+        strval = str(value)
     return strval 
 
 #---------------------------------------------------------------
