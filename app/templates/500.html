@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-    <h1>An unexpected error has occured.</h1>
+    <h1>Sorry! An unexpected error has occured.</h1>
     <p><a href="{{ url_for('index') }}">Go Back</a></p>
+    <br>
+    <h3>Possible issues:</h3>
+    <ul class="list-group">
+      <li class="list-group-item">Your table may contain nonstandard symbols or characters.</li>
+      <li class="list-group-item">TableReader may have encountered a problem trying to detect multiple tables on the same page.</li>
+    </ul>
 {% endblock %}
