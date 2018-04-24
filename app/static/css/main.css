@@ -1,7 +1,7 @@
 @import url('//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css');
 
 h1, body, content {
-  font-family: 'Times New Roman', serif;
+  font-family: 'PT Serif', serif;
 }
 
 .formlabels {
@@ -9,10 +9,25 @@ h1, body, content {
 }
 
 .navbar-default {
-  background-color: teal;
+  background-color: #286090;
   background-image: none;
   background-repeat: no-repeat;
-  font-family: 'Times New Roman', serif;
+  font-family: 'PT Serif', serif;
+}
+
+.navbar-default .navbar-nav > li > a:hover, .navbar-default .navbar-nav > li > a:focus {
+    /*color: #000;*/ /*Sets the text hover color on navbar*/
+    color: white;
+}
+
+.navbar-default .navbar-nav > .active > a, .navbar-default .navbar-nav > .active >
+        a:hover, .navbar-default .navbar-nav > .active > a:focus {
+    color: white; /*BACKGROUND color for active*/
+    background-color: #030033;
+}
+
+.navbar-default .navbar-nav > li > a {
+    color: white; /*Change active text color here*/
 }
 
 #loading {
