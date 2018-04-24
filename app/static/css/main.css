@@ -1,7 +1,11 @@
 @import url('//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css');
 
-h1, body, content {
+h1 {
   font-family: 'PT Serif', serif;
+}
+
+body, content {
+  font-family: 'PT Sans', sans-serif;
 }
 
 .formlabels {

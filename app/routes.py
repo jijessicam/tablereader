@@ -27,6 +27,10 @@ from wtforms import StringField, SubmitField, BooleanField
 from wtforms import validators, ValidationError 
 import ftfy
 
+import sys 
+reload(sys)
+sys.setdefaultencoding("utf-8")
+
 #---------------------------------------------------------------
 # APP CONFIG 
 #---------------------------------------------------------------
