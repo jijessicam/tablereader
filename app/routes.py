@@ -287,7 +287,13 @@ def mapAllToString(value):
 
 def highlightNullValues(value):
     if pd.isnull(value):
-        value = 'background-color: red'
+        value = 'background-color: #DF744A'
+    if isinstance(value, unicode):
+        if value == "NaN" or value == "nan" or value == "None":
+            value = 'background-color: #DF744A'
+    if isinstance(value, basestring):
+        if value == "NaN" or value == "nan" or value == "None":
+            value = 'background-color: #DF744A'
     return value 
 
 #---------------------------------------------------------------
